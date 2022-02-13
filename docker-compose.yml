@@ -1,0 +1,79 @@
+version: "3.6"
+
+services:
+
+########################################################################
+# Media Stuff
+########################################################################
+  nzbget:
+    image: linuxserver/nzbget
+    cap_add:
+        - NET_ADMIN
+    volumes:
+        - /mnt/d/media/nzbget/:/config
+        #- ./nzbget/data:/data
+        #- ./nzbget/downloads/complete:/complete
+        - /mnt/d/media/nzbget/downloads:/downloads
+        #- ./nzbget/scripts:/scripts
+        - /etc/localtime:/etc/localtime:ro
+    # ports:
+    #  - "9977:9977"
+    env_file:
+      - .env
+    restart: unless-stopped
+    
+  nzbhydra:
+    image: linuxserver/nzbhydra2
+    volumes:
+        - /mnt/d/media/nzbhydra/config:/config
+        - /mnt/d/media/nzbget/downloads:/downloads
+        - /etc/localtime:/etc/localtime:ro
+    env_file: .env
+    #    ports:
+    #  - 5076:5076
+    restart: unless-stopped
+
+  sonarr:
+    image: linuxserver/sonarr
+    env_file: .env
+    # ports:
+    #   - "8989:8989"
+    volumes:
+      - /mnt/d/media/sonarr:/config
+      - /mnt/g/library:/library
+      - /mnt/d/media/nzbget/downloads:/config/downloads
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+
+  radarr:
+    image: linuxserver/radarr
+    env_file: .env
+    # ports:
+    #   - "7878:7878"
+    volumes:
+      - /mnt/d/media/radarr:/config
+      - /mnt/g/library:/library
+      - /mnt/d/media/nzbget/downloads:/config/downloads
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+
+########################################################################
+# End - media stuff
+########################################################################
+ 
+  nginx:
+    image: nginx
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+    ports:
+      - "6969:6969"
+    environment:
+      - NGINX_HOST=localhost
+      - NGINX_PORT=6969
+    env_file: .env
+    restart: unless-stopped
+    depends_on:
+      - nzbget
+      - sonarr
+      - radarr
+      - nzbhydra
